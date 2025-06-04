@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Sidebar with Material Icons</title>
+
+    <!-- Google Material Icons & Font -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=calendar_month" />
+
+
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            font-family: 'Roboto', sans-serif;
+            background: white;
+        }
+
+        /* Sidebar (unchanged) */
+        .sidebar {
+            width: 60px;
+            height: 100vh;
+            background: white;
+            border-right: 1px solid rgba(107, 107, 107, 0.477);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            gap: 30px;
+        }
+
+        .icon {
+            font-size: 32px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: transform 0.2s, color 0.2s;
+        }
+
+        .icon.active {
+            color: #10b981;
+            /* green */
+            transform: scale(1.3);
+        }
+
+        /* Main content */
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        .navbar-section {
+            display: flex;
+            padding: 30px 40px;
+            align-items: center;
+            /* justify-content: center; */
+            gap: 15px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sun-icon {
+            font-size: 42px;
+        }
+
+        .calendar-icon{
+            font-size: 32px;
+        }
+
+        .yield-details-container {
+            width: 100%;
+            padding: 100px;
+            display: flex;
+            height: 18rem;
+            justify-content: space-between;
+            font-size: 34px;
+        }
+
+        .yield-details h6,
+        .harvesting-details h6 {
+            padding: 10px 0px;
+        }
+
+        .yield-details,
+        .harvesting-details {
+            flex: 1;
+            padding: 40px;
+            font-size: 36px;
+        }
+        .yield-amount , .harvesting-data{
+            font-weight: 200 !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <a href="ndashboard.html" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="ndashboard.html" title="Dashboard">dashboard</span>
+        </a>
+        <a href="yield.html" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="yield.html" title="Yield">show_chart</span>
+        </a>
+        <a href="nmap.html" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="nmap.html" title="Location">location_on</span>
+        </a>
+        <a href="" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="" title="Profile">account_circle</span>
+        </a>
+    </div>
+
+
+
+    <!-- Main content area -->
+    <div class="main">
+        <!-- Navbar -->
+        <div class="navbar-section">
+            <h1 style="font-size: 24px; margin: 0;">
+                <span id="today-date"></span>
+            </h1>
+            <span class="sun-icon" style="margin-left: 10px;">☀️</span>
+            <a href="nweather.html" style="text-decoration : none;">
+                <span class="material-symbols-outlined calendar-icon">
+                    calendar_month
+                </span>
+            </a>
+        </div>
+
+
+        <div style="display: flex; height: 100vh; padding: 0px; margin: 0;">
+            <div class="yield-details-container"
+                style="display: flex; justify-content: space-between; width: 100%; padding: 0 40px; font-size: 34px;">
+                <div id="yield-details" class="yield-details">
+                    <h6 style="margin: 0;">Yield</h6>
+                    <span id="yield-amount" class="yield-amount"></span>
+                </div>
+                <div id="harvesting-details" class="harvesting-details">
+                    <h6 style="margin: 0;">Harvesting Date</h6>
+                    <span id="harvesting-date" class="harvesting-date"></span>
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <script>
+            // Get current page
+            const currentPage = window.location.pathname.split('/').pop();
+
+            // Apply active class to the matching icon
+            document.querySelectorAll(".sidebar .icon").forEach(icon => {
+                if (icon.dataset.page === currentPage) {
+                    icon.classList.add("active");
+                }
+            });
+            const yieldData = [
+                {
+                    yieldAmount: "10,00,000",
+                    harvestingTime: [30, "November", 2025]
+                }
+            ];
+
+            document.getElementById("yield-amount").textContent = `${yieldData[0].yieldAmount}`;
+            document.getElementById("harvesting-date").textContent = yieldData[0].harvestingTime.join(" ");
+
+
+            // Set today's date in the navbar
+            const today = new Date();
+            const options = { day: 'numeric', month: 'long', year: 'numeric' };
+            const formattedDate = today.toLocaleDateString('en-US', options);
+            document.getElementById("today-date").textContent = `Today - ${formattedDate}`;
+        </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Dashboard with Map</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=calendar_month" />
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <!-- Google Material Icons & Font -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            font-family: 'Roboto', sans-serif;
+            background: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .sidebar {
+            width: 60px;
+            background: white;
+            border-right: 1px solid rgba(107, 107, 107, 0.477);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 20px;
+            gap: 30px;
+            flex-shrink: 0;
+        }
+
+        .icon {
+            font-size: 32px;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: transform 0.2s, color 0.2s;
+        }
+
+        .icon.active {
+            color: #10b981;
+            transform: scale(1.3);
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar-section {
+            display: flex;
+            padding: 30px 40px;
+            align-items: center;
+            gap: 15px;
+            background: #f9fafb;
+            border-bottom: 1px solid #e5e7eb;
+            flex-shrink: 0;
+        }
+
+        .sun-icon {
+            font-size: 42px;
+        }
+
+        .calendar-icon{
+            font-size: 32px;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            min-height: 0;
+        }
+
+        #map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .detail-sidebar {
+            width: 300px;
+            background: #ffffff;
+            padding: 20px;
+            font-size: 18px;
+            border-left: 1px solid #d1d5db;
+            box-sizing: border-box;
+            flex-shrink: 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Popup styles  */
+        .leaflet-popup-content {
+            display: flex;
+            align-items: center;
+            font-size: 18px;
+            padding: 5px;
+            margin: 0;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            padding: 5px;
+        }
+
+        .leaflet-popup-tip {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .popup-icon {
+            font-size: 42px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+
+        .water-icon {
+            color: #2196f3;
+            width: 40px;
+            /* Blue for water */
+        }
+
+        .fertilizer-icon {
+            color: #4caf50;
+            width: 40px;
+            /* Green for fertilizer */
+        }
+        .leaflet-popup.fertilizer-popup {
+            bottom: 2rem !important;
+            margin:auto 20px;
+            /* Remove default -7px offset */
+        }
+        .leaflet-popup.water-popup{
+            margin-right:auto 20px;
+            bottom: -3rem !important;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <a href="ndashboard.html" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="ndashboard.html" title="Dashboard">dashboard</span>
+        </a>
+        <a href="yield.html" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="yield.html" title="Yield Trend">show_chart</span>
+        </a>
+        <a href="nmap.html" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="nmap.html" title="Location">location_on</span>
+        </a>
+        <a href="" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="" title="Profile">account_circle</span>
+        </a>
+    </div>
+
+    <!-- Main content area -->
+    <div class="main">
+        <!-- Navbar -->
+        <div class="navbar-section">
+            <h1 style="font-size: 24px; margin: 0;">
+                <span id="today-date"></span>
+            </h1>
+            <span class="sun-icon" style="margin-left: 10px;">☀️</span>
+            <a href="nweather.html" style="text-decoration : none;">
+                <span class="material-symbols-outlined calendar-icon">
+                    calendar_month
+                </span>
+            </a>
+        </div>
+
+        <div class="content">
+            <!-- Map -->
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
+
+            <!-- Right Sidebar -->
+            <div id="detail-sidebar" class="detail-sidebar hidden">
+                <button id="close-sidebar"
+                    style="float: right; background: none; border: none; font-size: 18px; cursor: pointer;">✖</button>
+                <h2 id="detail-title">Farm Details</h2>
+                <p><strong>Farm ID:</strong> <span id="detail-id"></span></p>
+                <p><strong>Area:</strong> <span id="detail-area"></span></p>
+                <p><strong>Soil Type:</strong> <span id="detail-soil-type"></span></p>
+                <p><strong>Crop Type:</strong> <span id="detail-crop"></span></p>
+                <p><strong>Crop Count:</strong> <span id="detail-crop-count"></span></p>
+                <p><strong>Location:</strong> <span id="detail-location"></span></p>
+                <p><strong>Stage:</strong> <span id="detail-stage"></span></p>
+                <p><strong>Fertilizer Type:</strong> <span id="detail-fertilizer-type"></span></p>
+                <p><strong>Fertilizer Qty:</strong> <span id="detail-fertilizer-qty"></span></p>
+                <p><strong>Water Quantity:</strong> <span id="detail-water-quantity"></span></p>
+                <p><strong>Solar Radiation:</strong> <span id="detail-solar-radiation"></span></p>
+                <p><strong>Wind Speed:</strong> <span id="detail-wind-speed"></span></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Set today's date in the navbar
+        const today = new Date();
+        const options = { day: 'numeric', month: 'long', year: 'numeric' };
+        const formattedDate = today.toLocaleDateString('en-US', options);
+        document.getElementById("today-date").textContent = `Today - ${formattedDate}`;
+
+        // Apply active class to sidebar icon
+        const currentPage = window.location.pathname.split('/').pop();
+        document.querySelectorAll(".sidebar .icon").forEach(icon => {
+            if (icon.dataset.page === currentPage) {
+                icon.classList.add("active");
+            }
+        });
+
+        // Predefined data for fields not in localStorage
+        const additionalData = [
+            {
+                id: 1,
+                location: "Salem",
+                stage: "Vegetative",
+                fertilizerType: "Urea",
+                fertilizerQty: "30kg",
+                waterQuantity: "500L",
+                solarRadiation: "---",
+                windSpeed: "10km/hr"
+            },
+            {
+                id: 2,
+                location: "Erode",
+                stage: "Flowering",
+                fertilizerType: "Urea",
+                fertilizerQty: "40kg",
+                waterQuantity: "700L",
+                solarRadiation: "---",
+                windSpeed: "10km/hr"
+            },
+            {
+                id: 3,
+                location: "Coimbatore",
+                stage: "Maturing",
+                fertilizerType: "Urea",
+                fertilizerQty: "35kg",
+                waterQuantity: "600L",
+                solarRadiation: "---",
+                windSpeed: "12km/hr"
+            }
+        ];
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Initialize map
+            var map = L.map('map').setView([20.5937, 78.9629], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            var drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            // Load farms from localStorage
+            let farms = JSON.parse(localStorage.getItem('farms')) || [];
+            let popupLayers = [];
+
+            // Render farms and set bounds
+            let bounds = L.latLngBounds();
+            farms.forEach(farm => {
+                var layer = L.polygon(farm.coordinates, {
+                    color: 'blue',
+                    weight: 2,
+                    fillOpacity: 0.3,
+                    farmId: farm.id
+                }).addTo(drawnItems);
+                layer.on('click', () => showFarmDetails(farm.id));
+                bounds.extend(layer.getBounds());
+
+                // Add persistent popups
+                const extra = additionalData.find(d => d.id === farm.id) || {};
+                const center = layer.getBounds().getCenter();
+
+                // Water popup
+                const waterPopup = L.popup({
+                    autoClose: false,
+                    closeOnClick: false,
+                    closeButton: false,
+                    className: 'water-popup'
+                }).setLatLng([center.lat + 0.0003, center.lng + 0.0003]) // Increased offset
+                    .setContent(`<span><img class="popup-icon water-icon" src="icons/watering-can.png" alt="Watering Can">
+</span>${extra.waterQuantity || 'Unknown'}`)
+                    .openOn(map);
+                popupLayers.push(waterPopup);
+
+                // Fertilizer popup
+                const fertilizerPopup = L.popup({
+                    autoClose: false,
+                    closeOnClick: false,
+                    closeButton: false,
+                    className: 'fertilizer-popup'
+                }).setLatLng([center.lat - 0.0003, center.lng]) // Increased offset
+                    .setContent(`<span ><img class="popup-icon fertilizer-icon" src="icons/fertilizer.png" alt="Fertilizer">
+</span>${extra.fertilizerQty || 'Unknown'}`)
+                    .openOn(map);
+                popupLayers.push(fertilizerPopup);
+
+                // Log popup positions for debugging
+                console.log(`Farm ${farm.id} Popups: Water at [${center.lat + 0.0003}, ${center.lng}], Fertilizer at [${center.lat - 0.0003}, ${center.lng}]`);
+            });
+
+            // Zoom to farm bounds if farms exist
+            if (farms.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+
+            // Log stored farms
+            if (farms.length > 0) {
+                console.clear();
+                console.log("Stored Farms:");
+                farms.forEach(farm => {
+                    const extra = additionalData.find(d => d.id === farm.id) || {};
+                    console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType || 'Not set'}, Count = ${farm.cropCount || 'Not set'}, Soil = ${farm.soilType || 'Not set'}, Location = ${extra.location || 'Unknown'}, Water = ${extra.waterQuantity || 'Unknown'}, Fertilizer = ${extra.fertilizerQty || 'Unknown'}`);
+                });
+            }
+
+            const sidebar = document.getElementById("detail-sidebar");
+            const closeBtn = document.getElementById("close-sidebar");
+
+            function showFarmDetails(farmId) {
+                const farm = farms.find(f => f.id === farmId);
+                const extra = additionalData.find(d => d.id === farmId) || {};
+
+                if (farm) {
+                    // Close all popups
+                    popupLayers.forEach(popup => map.closePopup(popup));
+
+                    document.getElementById("detail-title").textContent = `Farm ${farmId} Details`;
+                    document.getElementById("detail-id").textContent = farm.id;
+                    document.getElementById("detail-area").textContent = `${farm.area.toFixed(2)} km²`;
+                    document.getElementById("detail-soil-type").textContent = farm.soilType || 'Not set';
+                    document.getElementById("detail-crop").textContent = farm.cropType || 'Not set';
+                    document.getElementById("detail-crop-count").textContent = farm.cropCount || 'Not set';
+                    document.getElementById("detail-location").textContent = extra.location || 'Unknown';
+                    document.getElementById("detail-stage").textContent = extra.stage || 'Unknown';
+                    document.getElementById("detail-fertilizer-type").textContent = extra.fertilizerType || 'Unknown';
+                    document.getElementById("detail-fertilizer-qty").textContent = extra.fertilizerQty || 'Unknown';
+                    document.getElementById("detail-water-quantity").textContent = extra.waterQuantity || 'Unknown';
+                    document.getElementById("detail-solar-radiation").textContent = extra.solarRadiation || '---';
+                    document.getElementById("detail-wind-speed").textContent = extra.windSpeed || '---';
+
+                    sidebar.classList.remove("hidden");
+                    map.invalidateSize();
+
+                    console.log(`Clicked Farm ${farmId}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType || 'Not set'}, Count = ${farm.cropCount || 'Not set'}, Soil = ${farm.soilType || 'Not set'}, Location = ${extra.location || 'Unknown'}, Water = ${extra.waterQuantity || 'Unknown'}, Fertilizer = ${extra.fertilizerQty || 'Unknown'}`);
+                }
+            }
+
+            // Close sidebar and reopen popups
+            closeBtn.addEventListener("click", () => {
+                sidebar.classList.add("hidden");
+                map.invalidateSize();
+                // Reopen popups
+                popupLayers.forEach(popup => popup.openOn(map));
+            });
+
+            // Click outside to close sidebar and reopen popups
+            document.addEventListener("click", (e) => {
+                if (!sidebar.contains(e.target) && !e.target.closest('.leaflet-interactive')) {
+                    sidebar.classList.add("hidden");
+                    map.invalidateSize();
+                    popupLayers.forEach(popup => popup.openOn(map));
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>
