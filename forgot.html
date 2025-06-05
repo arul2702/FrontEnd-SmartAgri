@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Forgot Credentials</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f7f9fc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .forgot-box {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.1);
+      width: 360px;
+      text-align: center;
+    }
+
+    .forgot-box h2 {
+      margin-bottom: 20px;
+    }
+
+    .forgot-box input {
+      width: 80%;
+      padding: 12px;
+      margin-bottom: 20px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+    }
+
+    .forgot-box button {
+      width: 80%;
+      padding: 12px;
+      background: #007bff;
+      border: none;
+      color: white;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .forgot-box button:hover {
+      background: #0056b3;
+    }
+
+    .back-link {
+      margin-top: 15px;
+      display: block;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="forgot-box">
+    <h2>Forgot Username / Password</h2>
+    <form>
+      <input type="email" placeholder="Enter your registered email" required />
+      <button type="submit">Send Reset Link</button>
+    </form>
+    <a href="index.html" class="back-link">← Back to Login</a>
+  </div>
+</body>
+</html>

@@ -1,10 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8" />
     <title>Map Drawing</title>
-    <link rel="stylesheet" href="{% static 'cssfile/dashboard.css' %}">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
@@ -14,7 +12,6 @@
     <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
     <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
-
     <style>
         html, body {
             margin: 0;
@@ -29,7 +26,7 @@
             flex-direction: row;
         }
         .sidebar {
-            width: 60px;
+            width:80px;
             height: 100%;
             background: white;
             border-right: 1px solid rgba(107, 107, 107, 0.477);
@@ -41,7 +38,7 @@
             flex-shrink: 0;
         }
         .icon {
-            font-size: 32px;
+            font-size: 36px;
             color: #9ca3af;
             cursor: pointer;
             transition: transform 0.2s, color 0.2s;
@@ -57,7 +54,8 @@
             height: 100%;
         }
         .navbar-section {
-            padding: 20px 40px;
+            display: flex;
+            padding: 40px 50px;
             align-items: center;
             gap: 15px;
             background: #f9fafb;
@@ -70,63 +68,18 @@
             font-size: 42px;
         }
         .calendar-icon {
-            font-size: 32px;
-        }
-        .settings-level {
-            width: 100%;
-            height: 50px;
-            flex-shrink: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #f9fafb;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .progress-bar {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 14px;
-        }
-        .progress-step {
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            background: #e5e7eb;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #6b7280;
-            font-weight: bold;
-            transition: background 0.3s, color 0.3s;
-        }
-        .progress-step.active {
-            background: #10b981;
-            color: white;
-        }
-        .progress-line {
-            width: 50px;
-            height: 4px;
-            background: #e5e7eb;
-            transition: background 0.3s;
-        }
-        .progress-line.complete {
-            background: #10b981;
+            font-size: 36px;
         }
         #map-container {
             flex: 1;
             width: 100%;
-            min-height: 0;
             position: relative;
         }
         #map {
             width: 100%;
             height: 100%;
-            position: absolute;
-            top: 0;
-            left: 0;
         }
-        #submit-btn, #clear-all-btn {
+        #clear-all-btn {
             position: absolute;
             bottom: 20px;
             padding: 10px 20px;
@@ -137,19 +90,13 @@
             font-size: 16px;
             cursor: pointer;
             z-index: 1000;
-        }
-        #submit-btn {
-            left: 50%;
-            transform: translateX(-50%);
-        }
-        #clear-all-btn {
             left: calc(50% + 100px);
             transform: translateX(-50%);
         }
-        #submit-btn:hover, #clear-all-btn:hover {
+        #clear-all-btn:hover {
             background: #0056b3;
         }
-        #submit-btn.hidden, #clear-all-btn.hidden {
+        #clear-all-btn.hidden {
             display: none;
         }
         #farmPopup {
@@ -204,12 +151,12 @@
             background: rgba(255, 255, 255, 0.9);
             border-radius: 6px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            padding: 3px;
+            padding: 2px;
         }
         .leaflet-popup-tip {
             background: rgba(255, 255, 255, 0.9);
         }
-        .popup-icon {
+        .leaflet-popup .popup-icon {
             font-size: 16px;
             margin-right: 4px;
             vertical-align: middle;
@@ -218,21 +165,20 @@
             color: #d4a017;
         }
         .leaflet-popup.crop-popup {
-            bottom: auto !important;
+            margin-bottom: 10px;
         }
     </style>
 </head>
-
 <body>
     <div class="sidebar">
-        <a href="index.html" style="text-decoration: none;">
-            <span class="material-icons icon" data-page="index.html" title="Dashboard">dashboard</span>
+        <a href="ndashboard.html" style="text-decoration: none;">
+            <span class="material-icons icon" data-page="ndashboard.html" title="Dashboard">dashboard</span>
         </a>
         <a href="yield.html" style="text-decoration: none;">
             <span class="material-icons icon" data-page="yield.html" title="Yield">show_chart</span>
         </a>
         <a href="nmap.html" style="text-decoration: none;">
-            <span class="material-icons icon" data-page="nmap.html" title="Location">location_on</span>
+            <span class="material-icons icon active" data-page="nmap.html" title="Map">location_on</span>
         </a>
         <a href="" style="text-decoration: none;">
             <span class="material-icons icon" data-page="" title="Profile">account_circle</span>
@@ -240,7 +186,7 @@
     </div>
     <div class="main">
         <div class="navbar-section">
-            <h1 style="font-size: 24px; margin: 0;">
+            <h1 style="font-size: 28px; margin: 0;">
                 <span id="today-date"></span>
             </h1>
             <span class="sun-icon" style="margin-left: 10px;">☀️</span>
@@ -248,47 +194,37 @@
                 <span class="material-symbols-outlined calendar-icon">calendar_month</span>
             </a>
         </div>
-        <div class="settings-level">
-            <div class="progress-bar">
-                <div class="progress-step active" id="step-1">1</div>
-                <div class="progress-line" id="progress-line"></div>
-                <div class="progress-step" id="step-2">2</div>
-            </div>
-        </div>
         <div id="map-container">
             <div id="map"></div>
-            <button id="submit-btn">Submit</button>
             <!-- <button id="clear-all-btn">Clear All</button> -->
-        </div>
-        <div id="farmPopup">
-            <div class="editable">
-                <label>Crop Type:
-                    <select id="cropType">
-                        <option value="wheat">Wheat</option>
-                        <option value="rice">Rice</option>
-                        <option value="corn">Corn</option>
-                    </select>
-                </label>
-                <label>Crop Count:
-                    <input type="number" id="cropCount" min="1" />
-                </label>
-                <label>Soil Type:
-                    <select id="soilType">
-                        <option value="clay">Clay</option>
-                        <option value="sandy">Sandy</option>
-                        <option value="loamy">Loamy</option>
-                    </select>
-                </label>
-                <button id="farmSaveBtn">Save</button>
-                <button id="farmCancelBtn">Cancel</button>
-            </div>
-            <div class="read-only">
-                <p>Crop Count: <span id="cropCountDisplay"></span></p>
-                <button id="farmCloseBtn">Close</button>
+            <div id="farmPopup">
+                <div class="editable">
+                    <label>Crop Type:
+                        <select id="cropType">
+                            <option value="wheat">Wheat</option>
+                            <option value="rice">Rice</option>
+                            <option value="corn">Corn</option>
+                        </select>
+                    </label>
+                    <label>Soil Type:
+                        <select id="soilType">
+                            <option value="clay">Clay</option>
+                            <option value="sandy">Sandy</option>
+                            <option value="loamy">Loamy</option>
+                        </select>
+                    </label>
+                    <button id="farmSaveBtn">Save</button>
+                    <button id="farmCancelBtn">Cancel</button>
+                </div>
+                <div class="read-only">
+                    <p>Crop Type: <span id="cropTypeDisplay"></span></p>
+                    <p>Crop Count: <span id="cropCountDisplay"></span></p>
+                    <p>Soil Type: <span id="soilTypeDisplay"></span></p>
+                    <button id="farmCloseBtn">Close</button>
+                </div>
             </div>
         </div>
     </div>
-
     <script>
         // Set today's date in the navbar
         const today = new Date();
@@ -314,55 +250,90 @@
             map.addLayer(drawnItems);
 
             var drawControl = new L.Control.Draw({
-                edit: { featureGroup: drawnItems },
+                edit: {
+                    featureGroup: drawnItems,
+                    edit: {
+                        filter: function(layer) {
+                            const farm = farms.find(f => f.id === Number(layer.options.farmId));
+                            return farm && farm.stage !== 'locked';
+                        }
+                    },
+                    remove: {
+                        filter: function(layer) {
+                            const farm = farms.find(f => f.id === Number(layer.options.farmId));
+                            return farm && farm.stage !== 'locked';
+                        }
+                    }
+                },
                 draw: { marker: false, polygon: true, rectangle: true, polyline: false, circle: false }
             });
             map.addControl(drawControl);
 
-            // Load farms from localStorage
+            setTimeout(() => map.invalidateSize(), 100);
+
+            const cropCounts = {
+                wheat: 500,
+                rice: 450,
+                corn: 620
+            };
+
             let farms = [];
             try {
-                farms = JSON.parse(localStorage.getItem('farms')) || [];
+                const rawFarms = localStorage.getItem('farms');
+                console.log("Raw farms from localStorage:", rawFarms);
+                farms = rawFarms ? JSON.parse(rawFarms) : [];
+                console.log("Parsed farms:", farms);
             } catch (e) {
                 console.error("Error parsing farms from localStorage:", e);
+                farms = [];
             }
-            let farmIdCounter = farms.length > 0 ? Math.max(...farms.map(f => f.id)) + 1 : 1;
+            let farmIdCounter = farms.length > 0 ? Math.max(...farms.map(f => Number(f.id))) + 1 : 1;
 
-            // Ensure existing farms have stage field
-            farms = farms.map(farm => ({ ...farm, stage: farm.stage || 'editable' }));
+            // Validate loaded farms
+            farms = farms.filter(farm => {
+                if (!farm.id || !farm.coordinates || !Array.isArray(farm.coordinates) || farm.coordinates.length < 3) {
+                    console.warn(`Invalid farm ${farm.id || 'unknown'}: Missing or invalid id/coordinates, skipping`);
+                    return false;
+                }
+                return true;
+            }).map(farm => {
+                if (farm.stage === 'locked' && farm.cropType && cropCounts[farm.cropType] && !farm.cropCount) {
+                    console.warn(`Fixing farm ${farm.id}: Missing cropCount, assigning ${cropCounts[farm.cropType]}`);
+                    return { ...farm, cropCount: cropCounts[farm.cropType], id: Number(farm.id) };
+                }
+                return { ...farm, id: Number(farm.id) };
+            });
 
-            // Store crop count popups
             let cropCountPopups = [];
 
-            // Render stored farms and set bounds
             let bounds = L.latLngBounds();
             farms.forEach(farm => {
-                if (!farm.coordinates || !Array.isArray(farm.coordinates)) {
-                    console.warn(`Invalid coordinates for farm ${farm.id}`);
-                    return;
-                }
-                var layer = L.polygon(farm.coordinates, {
-                    color: farm.stage === 'locked' ? 'green' : 'blue',
-                    weight: 2,
-                    fillOpacity: 0.3,
-                    farmId: farm.id
-                }).addTo(drawnItems);
-                layer.on('click', () => showFarmPopup(farm.id, layer));
-                bounds.extend(layer.getBounds());
+                try {
+                    var layer = L.polygon(farm.coordinates, {
+                        color: farm.stage === 'locked' ? 'green' : 'blue',
+                        weight: 2,
+                        fillOpacity: 0.3,
+                        farmId: farm.id
+                    }).addTo(drawnItems);
+                    layer.on('click', () => showFarmPopup(farm.id, layer));
+                    bounds.extend(layer.getBounds());
 
-                if (farm.stage === 'locked') {
-                    const center = layer.getBounds().getCenter();
-                    const cropPopup = L.popup({
-                        autoClose: false,
-                        closeOnClick: false,
-                        closeButton: false,
-                        className: 'crop-popup'
-                    }).setLatLng([center.lat, center.lng])
-                      .setContent(`<span class="material-icons popup-icon crop-icon">grain</span>${farm.cropCount || 'Unknown'}`);
-                    cropPopup.farmId = farm.id;
-                    cropPopup.openOn(map);
-                    cropCountPopups.push(cropPopup);
-                    console.log(`Farm ${farm.id} Crop Count Popup: [${center.lat}, ${center.lng}]`);
+                    if (farm.stage === 'locked' && farm.cropType && cropCounts[farm.cropType]) {
+                        const center = layer.getBounds().getCenter();
+                        const cropPopup = L.popup({
+                            autoClose: false,
+                            closeOnClick: false,
+                            closeButton: false,
+                            className: 'crop-popup'
+                        }).setLatLng([center.lat, center.lng])
+                          .setContent(`<span class="material-icons popup-icon crop-icon">grain</span>${cropCounts[farm.cropType]}`);
+                        cropPopup.farmId = farm.id;
+                        cropPopup.openOn(map);
+                        cropCountPopups.push(cropPopup);
+                        console.log(`Farm ${farm.id} Crop Count Popup: [${center.lat}, ${center.lng}]`);
+                    }
+                } catch (e) {
+                    console.warn(`Error rendering farm ${farm.id}:`, e);
                 }
             });
 
@@ -374,183 +345,132 @@
                 console.clear();
                 console.log("Stored Farms:");
                 farms.forEach(farm => {
-                    console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType || 'Not set'}, Count = ${farm.cropCount || 'Not set'}, Soil = ${farm.soilType || 'Not set'}, Stage = ${farm.stage}`);
+                    console.log(`Farm ${farm.id}: Area = ${farm.area?.toFixed(2) || 'N/A'} km², Crop = ${farm.cropType || 'Not set'}, Count = ${farm.cropCount || 'Not set'}, Soil = ${farm.soilType || 'Not set'}, Stage = ${farm.stage || 'Not set'}`);
                 });
             }
 
-            function updateProgressBar() {
-                const allLocked = farms.length > 0 && farms.every(farm => farm.stage === 'locked');
-                document.getElementById('step-1').classList.toggle('active', true);
-                document.getElementById('step-2').classList.toggle('active', allLocked);
-                document.getElementById('progress-line').classList.toggle('complete', allLocked);
-                document.getElementById('submit-btn').classList.toggle('hidden', allLocked);
-                // document.getElementById('clear-all-btn').classList.toggle('hidden', farms.length === 0);
-            }
-            updateProgressBar();
+            map.on('draw:deletestart', function () {
+                console.log("Draw:deletestart event triggered");
+                document.getElementById('farmPopup').style.display = 'none';
+            });
 
             map.on('draw:created', function (e) {
-                var latlngs;
                 if (e.layer instanceof L.Polygon) {
-                    latlngs = e.layer.getLatLngs()[0];
+                    var latlngs = e.layer.getLatLngs()[0];
+                    if (!latlngs || latlngs.length < 3) {
+                        alert("Invalid polygon. Please draw a valid area.");
+                        return;
+                    }
+                    var areaSqM = calculateArea(latlngs);
+                    var farm = {
+                        id: farmIdCounter++,
+                        coordinates: latlngs.map(p => [p.lat, p.lng]),
+                        area: areaSqM / 1000000,
+                        cropType: null,
+                        cropCount: null,
+                        soilType: null,
+                        stage: 'editable'
+                    };
+                    e.layer.options.farmId = farm.id;
+                    e.layer.setStyle({ color: 'blue', weight: 2, fillOpacity: 0.3 });
+                    e.layer.addTo(drawnItems);
+                    e.layer.on('click', () => showFarmPopup(farm.id, e.layer));
+                    farms.push(farm);
+                    try {
+                        console.log("Saving new farm to localStorage:", farm);
+                        localStorage.setItem('farms', JSON.stringify(farms));
+                        console.log("Farms saved to localStorage:", localStorage.getItem('farms'));
+                    } catch (e) {
+                        console.error("Error saving farms to localStorage:", e);
+                        alert("Failed to save farm. LocalStorage may be full.");
+                    }
+                    console.clear();
+                    console.log("New Farm Added:");
+                    console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = Not set, Count = Not set, Soil = Not set, Stage = ${farm.stage}`);
+                    console.log("All Farms:");
+                    farms.forEach(f => {
+                        console.log(`Farm ${f.id}: Area = ${f.area?.toFixed(2) || 'N/A'} km², Crop = ${f.cropType || 'Not set'}, Count = ${f.cropCount || 'Not set'}, Soil = ${f.soilType || 'Not set'}, Stage = ${f.stage || 'Not set'}`);
+                    });
+                    showFarmPopup(farm.id, e.layer);
+                    setTimeout(() => map.invalidateSize(), 100);
                 } else {
-                    alert("Please draw a polygon shape.");
-                    return;
+                    alert("Please draw a valid polygon shape.");
                 }
-                if (!latlngs || latlngs.length < 3) {
-                    alert("Invalid polygon. Please draw a valid area.");
-                    return;
-                }
-                var areaSqM = calculateArea(latlngs);
-                var farm = {
-                    id: farmIdCounter++,
-                    coordinates: latlngs.map(p => [p.lat, p.lng]),
-                    area: areaSqM / 1000000,
-                    cropType: null,
-                    cropCount: null,
-                    soilType: null,
-                    stage: 'editable'
-                };
-                var layer = L.polygon(farm.coordinates, {
-                    color: 'blue',
-                    weight: 2,
-                    fillOpacity: 0.3,
-                    farmId: farm.id
-                }).addTo(drawnItems);
-                layer.on('click', () => showFarmPopup(farm.id, layer));
-                farms.push(farm);
-                try {
-                    localStorage.setItem('farms', JSON.stringify(farms));
-                } catch (e) {
-                    console.error("Error saving farms to localStorage:", e);
-                }
-                console.clear();
-                console.log("New Farm Added:");
-                console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = Not set, Count = Not set, Soil = Not set, Stage = ${farm.stage}`);
-                console.log("All Farms:");
-                farms.forEach(f => {
-                    console.log(`Farm ${f.id}: Area = ${f.area.toFixed(2)} km², Crop = ${f.cropType || 'Not set'}, Count = ${f.cropCount || 'Not set'}, Soil = ${f.soilType || 'Not set'}, Stage = ${f.stage}`);
-                });
-                showFarmPopup(farm.id, layer);
-                updateProgressBar();
-                setTimeout(() => map.invalidateSize(), 0);
             });
 
             map.on('draw:deleted', function (e) {
                 console.log("Draw:deleted event triggered");
+                console.log("LocalStorage before deletion:", localStorage.getItem('farms'));
                 const deletedFarmIds = [];
                 e.layers.eachLayer(layer => {
-                    const farmId = layer.options.farmId;
-                    if (farmId !== undefined && farmId !== null) {
+                    const farmId = Number(layer.options?.farmId);
+                    console.log(`Processing deletion for farmId: ${farmId}, type: ${typeof farmId}`);
+                    if (isNaN(farmId)) {
+                        console.warn(`Skipping deletion: Invalid farmId ${farmId}`);
+                        return;
+                    }
+                    const farm = farms.find(f => f.id === farmId);
+                    if (farm && farm.stage !== 'locked') {
                         deletedFarmIds.push(farmId);
-                        console.log(`Detected deletion of farm ${farmId}`);
+                        console.log(`Marking farm ${farmId} for deletion`);
+                        drawnItems.removeLayer(layer);
                     } else {
-                        console.warn("Layer missing farmId:", layer);
+                        console.warn(`Deletion skipped: farmId=${farmId}, stage=${farm ? farm.stage : 'not found'}, possibly locked or undefined`);
                     }
                 });
-                if (deletedFarmIds.length > 0) {
-                    cropCountPopups = cropCountPopups.filter(popup => {
-                        const farmId = popup.farmId;
-                        if (farmId && deletedFarmIds.includes(farmId)) {
-                            console.log(`Removing popup for farm ${farmId}`);
-                            map.removeLayer(popup);
-                            return false;
-                        }
-                        return true;
-                    });
-                    const initialFarmCount = farms.length;
-                    farms = farms.filter(farm => !deletedFarmIds.includes(farm.id));
-                    if (farms.length < initialFarmCount) {
-                        try {
-                            localStorage.setItem('farms', JSON.stringify(farms));
-                            console.log("localStorage updated after deletion");
-                        } catch (e) {
-                            console.error("Error saving farms to localStorage:", e);
-                        }
-                        console.clear();
-                        console.log("Farm(s) Deleted:", deletedFarmIds);
-                        console.log("Remaining Farms:", farms.length);
-                        farms.forEach(farm => {
-                            console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType || 'Not set'}, Count = ${farm.cropCount || 'Not set'}, Soil = ${farm.soilType || 'Not set'}, Stage = ${farm.stage}`);
-                        });
-                    } else {
-                        console.warn("No farms removed from farms array");
-                    }
-                    updateProgressBar();
-                } else {
-                    console.log("No valid farms deleted");
-                }
-            });
 
-            // document.getElementById('clear-all-btn').addEventListener('click', () => {
-            //     if (farms.length === 0) {
-            //         alert("No farms to clear.");
-            //         return;
-            //     }
-            //     cropCountPopups.forEach(popup => {
-            //         console.log(`Removing popup for farm ${popup.farmId}`);
-            //         map.removeLayer(popup);
-            //     });
-            //     cropCountPopups = [];
-            //     drawnItems.eachLayer(layer => {
-            //         console.log(`Removing layer for farm ${layer.options.farmId}`);
-            //         drawnItems.removeLayer(layer);
-            //     });
-            //     farms = [];
-            //     try {
-            //         localStorage.setItem('farms', JSON.stringify(farms));
-            //         console.log("localStorage cleared");
-            //     } catch (e) {
-            //         console.error("Error clearing farms in localStorage:", e);
-            //     }
-            //     console.clear();
-            //     console.log("All Farms Cleared");
-            //     console.log("Remaining Farms: None");
-            //     updateProgressBar();
-            // });
-
-            document.getElementById('submit-btn').addEventListener('click', () => {
-                if (farms.length === 0) {
-                    alert("No farms to submit.");
+                if (deletedFarmIds.length === 0) {
+                    console.log("No editable farms were deleted");
                     return;
                 }
-                farms = farms.map(farm => {
-                    if (farm.stage !== 'locked') {
-                        const layer = drawnItems.getLayers().find(l => l.options.farmId === farm.id);
-                        if (layer) {
-                            const center = layer.getBounds().getCenter();
-                            const cropPopup = L.popup({
-                                autoClose: false,
-                                closeOnClick: false,
-                                closeButton: false,
-                                className: 'crop-popup'
-                            }).setLatLng([center.lat, center.lng])
-                              .setContent(`<span class="material-icons popup-icon crop-icon">grain</span>${farm.cropCount || 'Unknown'}`);
-                            cropPopup.farmId = farm.id;
-                            cropPopup.openOn(map);
-                            cropCountPopups.push(cropPopup);
-                            console.log(`Farm ${farm.id} Crop Count Popup: [${center.lat}, ${center.lng}]`);
-                        }
+
+                console.log("Deleted farm IDs:", deletedFarmIds);
+                console.log("Farms before deletion:", JSON.stringify(farms, null, 2));
+
+                // Update farms array
+                farms = farms.filter(farm => {
+                    const shouldKeep = !deletedFarmIds.includes(farm.id);
+                    if (!shouldKeep) {
+                        console.log(`Removing farm ${farm.id} from farms array`);
                     }
-                    return { ...farm, stage: 'locked' };
+                    return shouldKeep;
                 });
+
+                console.log("Farms after deletion:", JSON.stringify(farms, null, 2));
+
+                // Remove related popups
+                cropCountPopups = cropCountPopups.filter(popup => {
+                    const shouldRemove = deletedFarmIds.includes(Number(popup.farmId));
+                    if (shouldRemove) {
+                        console.log(`Removing popup for farm ${popup.farmId}`);
+                        map.removeLayer(popup);
+                    }
+                    return !shouldRemove;
+                });
+
+                // Save to localStorage
                 try {
-                    localStorage.setItem('farms', JSON.stringify(farms));
+                    const serializedFarms = JSON.stringify(farms);
+                    console.log("Attempting to save to localStorage:", serializedFarms);
+                    localStorage.setItem('farms', serializedFarms);
+                    const savedFarms = localStorage.getItem('farms');
+                    console.log("Farms saved to localStorage:", savedFarms);
+                    if (!savedFarms || JSON.parse(savedFarms).length !== farms.length) {
+                        console.error("LocalStorage save verification failed: Mismatch in farm count");
+                        alert("Failed to delete farm. LocalStorage save verification failed.");
+                    }
                 } catch (e) {
                     console.error("Error saving farms to localStorage:", e);
+                    alert("Failed to delete farm. LocalStorage may be full or corrupted.");
                 }
-                drawnItems.eachLayer(layer => {
-                    if (layer.options.farmId) {
-                        layer.setStyle({ color: 'green' });
-                    }
-                });
+
                 console.clear();
-                console.log("Submit Clicked: All farms locked");
-                console.log("All Farms:");
+                console.log("Farm(s) Deleted:", deletedFarmIds);
+                console.log("Remaining Farms:", farms.length);
                 farms.forEach(farm => {
-                    console.log(`Farm ${f.id}: Area = ${f.area.toFixed(2)} km², Crop = ${farm.cropType || 'Not set'}, Count = ${farm.cropCount || 'Not set'}, Soil = ${f.soilType || 'Not set'}, Stage = ${f.stage}`);
+                    console.log(`Farm ${farm.id}: Area = ${farm.area?.toFixed(2) || 'N/A'} km², Crop = ${farm.cropType || 'Not set'}, Count = ${farm.cropCount || 'Not set'}, Soil = ${farm.soilType || 'Not set'}, Stage = ${farm.stage || 'Not set'}`);
                 });
-                updateProgressBar();
-                setTimeout(() => window.location.reload(), 100);
+                setTimeout(() => map.invalidateSize(), 100);
             });
 
             function showFarmPopup(farmId, layer) {
@@ -559,7 +479,7 @@
                         map.closePopup(popup);
                     }
                 });
-                const farm = farms.find(f => f.id === farmId);
+                const farm = farms.find(f => f.id === Number(farmId));
                 if (!farm) {
                     console.error(`Farm ${farmId} not found`);
                     return;
@@ -583,50 +503,78 @@
 
                 if (farm.stage === 'locked') {
                     popup.classList.add('read-only');
-                    document.getElementById('cropCountDisplay').textContent = farm.cropCount || 'Not set';
+                    document.getElementById('cropTypeDisplay').textContent = farm.cropType || 'Not set';
+                    document.getElementById('cropCountDisplay').textContent = farm.cropType && cropCounts[farm.cropType] ? cropCounts[farm.cropType] : 'Not set';
+                    document.getElementById('soilTypeDisplay').textContent = farm.soilType || 'Not set';
                     newCloseBtn.addEventListener('click', () => {
                         popup.style.display = 'none';
-                        cropCountPopups.forEach(popup => popup.openOn(map));
+                        cropCountPopups.forEach(popup => {
+                            if (!popup.isOpen()) {
+                                popup.openOn(map);
+                            }
+                        });
                     });
                 } else {
                     popup.classList.remove('read-only');
                     document.getElementById('cropType').value = farm.cropType || 'wheat';
-                    document.getElementById('cropCount').value = farm.cropCount || '';
                     document.getElementById('soilType').value = farm.soilType || 'clay';
 
                     newSaveBtn.addEventListener('click', () => {
                         const cropType = document.getElementById('cropType').value;
-                        const cropCountInput = document.getElementById('cropCount').value;
-                        const cropCount = parseInt(cropCountInput);
                         const soilType = document.getElementById('soilType').value;
-                        if (!cropType || isNaN(cropCount) || cropCount < 1 || !soilType || cropCountInput === '') {
-                            alert("Please enter a valid crop type, a positive crop count, and soil type.");
-                            console.log("Save failed: Invalid input", { cropType, cropCountInput, cropCount, soilType });
+                        if (!cropType || !soilType) {
+                            alert("Please select a valid crop type and soil type.");
+                            console.log("Save failed: Invalid input", { cropType, soilType });
                             return;
                         }
                         farm.cropType = cropType;
-                        farm.cropCount = cropCount;
                         farm.soilType = soilType;
+                        farm.cropCount = cropCounts[cropType] || null;
+                        farm.stage = 'locked';
+                        layer.setStyle({ color: 'green' });
+                        const center = layer.getBounds().getCenter();
+                        const cropPopup = L.popup({
+                            autoClose: false,
+                            closeOnClick: false,
+                            closeButton: false,
+                            className: 'crop-popup'
+                        }).setLatLng([center.lat, center.lng])
+                          .setContent(`<span class="material-icons popup-icon crop-icon">grain</span>${cropCounts[cropType]}`);
+                        cropPopup.farmId = farm.id;
+                        cropPopup.openOn(map);
+                        cropCountPopups.push(cropPopup);
+                        console.log(`Farm ${farm.id} Crop Count Popup: [${center.lat}, ${center.lng}]`);
                         try {
+                            console.log("Saving farms to localStorage after save:", JSON.stringify(farms, null, 2));
                             localStorage.setItem('farms', JSON.stringify(farms));
-                            console.log(`Farm ${farm.id} saved to localStorage`);
+                            console.log("Farms after saving:", localStorage.getItem('farms'));
+                            console.log(`Farm ${farm.id} saved and locked`);
                         } catch (e) {
                             console.error("Error saving farms to localStorage:", e);
+                            alert("Failed to save farm. LocalStorage may be full.");
                         }
                         console.clear();
-                        console.log("Farm Updated:");
-                        console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType}, Count = ${farm.cropCount}, Soil = ${farm.soilType}, Stage = ${farm.stage}`);
+                        console.log("Farm Updated and Locked:");
+                        console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType}, Count = ${farm.cropCount || 'Not set'}, Soil = ${farm.soilType}, Stage = ${farm.stage}`);
                         console.log("All Farms:");
                         farms.forEach(f => {
-                            console.log(`Farm ${f.id}: Area = ${f.area.toFixed(2)} km², Crop = ${f.cropType || 'Not set'}, Count = ${f.cropCount || 'Not set'}, Soil = ${f.soilType || 'Not set'}, Stage = ${f.stage}`);
+                            console.log(`Farm ${f.id}: Area = ${f.area?.toFixed(2) || 'N/A'} km², Crop = ${f.cropType || 'Not set'}, Count = ${f.cropCount || 'Not set'}, Soil = ${f.soilType || 'Not set'}, Stage = ${f.stage || 'Not set'}`);
                         });
                         popup.style.display = 'none';
-                        cropCountPopups.forEach(popup => popup.openOn(map));
+                        cropCountPopups.forEach(p => {
+                            if (!p.isOpen()) {
+                                p.openOn(map);
+                            }
+                        });
                     });
 
                     newCancelBtn.addEventListener('click', () => {
                         popup.style.display = 'none';
-                        cropCountPopups.forEach(popup => popup.openOn(map));
+                        cropCountPopups.forEach(popup => {
+                            if (!popup.isOpen()) {
+                                popup.openOn(map);
+                            }
+                        });
                     });
                 }
             }

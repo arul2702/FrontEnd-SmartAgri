@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Crop Count</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            font-family: 'Roboto', sans-serif;
+            background: white;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background-color: #343a40;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: left;
+            flex-shrink: 0;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .step-bar {
+            display: flex;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .step-bar {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ccc;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            /* margin: 0 10px; */
+            position: relative;
+        }
+
+        .step.active {
+            background-color: #218838;
+        }
+
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            width: 40px;
+            height: 3px;
+            background-color: #ccc;
+            transform: translateY(-50%);
+            z-index: -1;
+        }
+
+        .step:last-child::after {
+            display: none;
+        }
+
+        #map-container {
+            position: relative;
+            flex: 1;
+            width: 100%;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .bottom-controls {
+            position: absolute;
+            bottom: 30px;
+            right: 60px;
+            z-index: 1000;
+        }
+
+        a.submit-button {
+            padding: 10px 16px;
+            text-decoration: none;
+            font-size: 24px;
+            background-color: #218838;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-left: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        a.back-button {
+            text-decoration: none;
+            padding: 10px 16px;
+            font-size: 24px;
+            background-color: gray;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .submit-button:hover {
+            background-color: #218838;
+        }
+
+        .leaflet-popup-content {
+            display: flex;
+            align-items: center;
+            font-size: 12px;
+            padding: 3px;
+            margin: 0;
+        }
+
+        .leaflet-popup-content-wrapper {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            padding: 3px;
+        }
+
+        .leaflet-popup-tip {
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .popup-icon {
+            font-size: 16px;
+            margin-right: 4px;
+            vertical-align: middle;
+        }
+
+        .crop-icon {
+            color: #d4a017;
+        }
+
+        .leaflet-popup.crop-popup {
+            bottom: auto !important;
+        }
+
+        .mid-line {
+            width: 100px;
+            margin-bottom: 13px;
+            border-bottom: 2px solid #218838;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">Settings</div>
+    <div class="content">
+        <div class="step-bar">
+            <div class="step ">1</div>
+            <div class="mid-line"></div>
+            <div class="step ">2</div>
+            <div class="mid-line"></div>
+            <div class="step active">3</div>
+        </div>
+        <div id="map-container">
+            <div id="map">
+                <div class="bottom-controls">
+                    <a href="sett-map.html" class="back-button">Back</a>
+                    <a href="ndashboard.html" class="submit-button">Submit</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var map = L.map('map').setView([20.5937, 78.9629], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            setTimeout(() => map.invalidateSize(), 100);
+
+            const cropCounts = {
+                wheat: 500,
+                rice: 450,
+                corn: 620
+            };
+
+            let farms = [];
+            try {
+                farms = JSON.parse(localStorage.getItem('farms')) || [];
+            } catch (e) {
+                console.error("Error parsing farms from localStorage:", e);
+            }
+
+            let bounds = L.latLngBounds();
+            farms.forEach(farm => {
+                if (!farm.coordinates || !Array.isArray(farm.coordinates)) {
+                    console.warn(`Invalid coordinates for farm ${farm.id}`);
+                    return;
+                }
+                var layer = L.polygon(farm.coordinates, {
+                    color: 'blue',
+                    weight: 2,
+                    fillOpacity: 0.3,
+                    farmId: farm.id
+                }).addTo(map);
+                bounds.extend(layer.getBounds());
+
+                if (farm.cropType && cropCounts[farm.cropType]) {
+                    const center = layer.getBounds().getCenter();
+                    const cropPopup = L.popup({
+                        autoClose: false,
+                        closeOnClick: false,
+                        closeButton: false,
+                        className: 'crop-popup'
+                    }).setLatLng([center.lat, center.lng])
+                        .setContent(`<span class="material-icons popup-icon crop-icon">grain</span>${cropCounts[farm.cropType]}`);
+                    cropPopup.farmId = farm.id;
+                    cropPopup.openOn(map);
+                }
+            });
+
+            if (farms.length > 0 && bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+
+            if (farms.length === 0) {
+                alert("No farms found.");
+            }
+
+            console.clear();
+            console.log("Farms with Crop Counts:");
+            farms.forEach(farm => {
+                console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType || 'Not set'}, Count = ${farm.cropType && cropCounts[farm.cropType] ? cropCounts[farm.cropType] : 'Not set'}`);
+            });
+        });
+    </script>
+</body>
+
+</html>

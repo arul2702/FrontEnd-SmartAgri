@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Map Drawing</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-draw@1.0.4/dist/leaflet.draw.css" />
+    <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto&display=swap" rel="stylesheet" />
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            font-family: 'Roboto', sans-serif;
+            background: white;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .navbar {
+            background-color: #343a40;
+            color: white;
+            padding: 15px 30px;
+            font-size: 20px;
+            font-weight: 600;
+            text-align: left;
+            flex-shrink: 0;
+        }
+
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* padding: 40px 60px; */
+        }
+
+        .step-bar {
+            display: flex;
+            justify-content: center;
+            padding: 10px;
+
+            /* margin-bottom: 40px; */
+        }
+
+        .step {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #ccc;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+            /* margin: 0 10px; */
+            position: relative;
+        }
+
+        .step.active {
+            background-color:#218838;
+        }
+
+        .step::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -20px;
+            width: 40px;
+            height: 3px;
+            background-color: #ccc;
+            transform: translateY(-50%);
+            z-index: -1;
+        }
+
+        .step:last-child::after {
+            display: none;
+        }
+
+        #map-container {
+            position: relative;
+            height: 100vh;
+            width: 100%;
+        }
+
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        .bottom-controls {
+            position: absolute;
+            bottom: 30px;
+            right: 60px;
+            z-index: 1000;
+        }
+
+        a.next-button {
+            padding: 10px 16px;
+            text-decoration: none;
+            font-size: 24px;
+            background-color: #218838;
+            color: white !important;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-left: 10px;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        a.back-button {
+            padding: 10px 16px;
+            text-decoration: none;
+
+            font-size: 24px;
+            background-color: gray;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .next-button:hover {
+            /* background-color: #218838; */
+        }
+
+        .back-button:hover {
+            /* background-color: #218838; */
+
+        }
+
+        #farmPopup {
+            display: none;
+            position: absolute;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border: 1px solid #ccc;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        #farmPopup label {
+            display: block;
+            margin: 5px 0;
+        }
+
+        #farmPopup select {
+            width: 150px;
+            padding: 5px;
+            margin: 5px 0;
+        }
+
+        #farmPopup button {
+            margin: 5px;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        #farmSaveBtn {
+            background-color: #007bff;
+            color: white;
+        }
+
+        #farmCancelBtn {
+            background-color: #ccc;
+        }
+        .mid-line{
+            width: 100px;
+            margin-bottom: 13px;
+            border-bottom: 2px solid #218838;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">Settings</div>
+    <div class="content">
+        <div class="step-bar">
+            <div class="step">1</div>
+            <div class="mid-line"></div>
+            <div class="step active">2</div>
+            <div class="mid-line"></div>
+            <div class="step">3</div>
+        </div>
+        <div id="map-container">
+            <div id="map">
+                <div class="bottom-controls">
+                    <a href="settings.html" class="back-button">Back</a>
+                    <a href="crop-count.html" class="next-button">Next</a>
+                </div>
+
+            </div>
+            <div id="farmPopup">
+                <label>Crop Type:
+                    <select id="cropType">
+                        <option value="wheat">Wheat</option>
+                        <option value="rice">Rice</option>
+                        <option value="corn">Corn</option>
+                    </select>
+                </label>
+                <label>Soil Type:
+                    <select id="soilType">
+                        <option value="clay">Clay</option>
+                        <option value="sandy">Sandy</option>
+                        <option value="loamy">Loamy</option>
+                    </select>
+                </label>
+                <button id="farmSaveBtn">Save</button>
+                <button id="farmCancelBtn">Cancel</button>
+            </div>
+        </div>
+
+    </div>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            var map = L.map('map').setView([12.9716, 77.5946], 12);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            var drawnItems = new L.FeatureGroup();
+            map.addLayer(drawnItems);
+
+            var drawControl = new L.Control.Draw({
+                edit: { featureGroup: drawnItems },
+                draw: { marker: false, polygon: true, rectangle: true, polyline: false, circle: false }
+            });
+            map.addControl(drawControl);
+
+            setTimeout(() => map.invalidateSize(), 0);
+
+            let farms = [];
+            try {
+                farms = JSON.parse(localStorage.getItem('farms')) || [];
+            } catch (e) {
+                console.error("Error parsing farms from localStorage:", e);
+            }
+            let farmIdCounter = farms.length > 0 ? Math.max(...farms.map(f => f.id)) + 1 : 1;
+
+            let bounds = L.latLngBounds();
+            farms.forEach(farm => {
+                if (!farm.coordinates || !Array.isArray(farm.coordinates)) {
+                    console.warn(`Invalid coordinates for farm ${farm.id}`);
+                    return;
+                }
+                var layer = L.polygon(farm.coordinates, {
+                    color: 'blue',
+                    weight: 2,
+                    fillOpacity: 0.3,
+                    farmId: farm.id
+                }).addTo(drawnItems);
+                layer.on('click', () => showFarmPopup(farm.id, layer));
+                bounds.extend(layer.getBounds());
+            });
+
+            if (farms.length > 0 && bounds.isValid()) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+
+            if (farms.length > 0) {
+                console.clear();
+                console.log("Stored Farms:");
+                farms.forEach(farm => {
+                    console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType || 'Not set'}, Soil = ${farm.soilType || 'Not set'}`);
+                });
+            }
+
+            map.on('draw:created', function (e) {
+                var latlngs;
+                if (e.layer instanceof L.Polygon) {
+                    latlngs = e.layer.getLatLngs()[0];
+                } else {
+                    alert("Please draw a polygon shape.");
+                    return;
+                }
+                if (!latlngs || latlngs.length < 3) {
+                    alert("Invalid polygon. Please draw a valid area.");
+                    return;
+                }
+                var areaSqM = calculateArea(latlngs);
+                var farm = {
+                    id: farmIdCounter++,
+                    coordinates: latlngs.map(p => [p.lat, p.lng]),
+                    area: areaSqM / 1000000,
+                    cropType: null,
+                    soilType: null
+                };
+                var layer = L.polygon(farm.coordinates, {
+                    color: 'blue',
+                    weight: 2,
+                    fillOpacity: 0.3,
+                    farmId: farm.id
+                }).addTo(drawnItems);
+                layer.on('click', () => showFarmPopup(farm.id, layer));
+                farms.push(farm);
+                try {
+                    localStorage.setItem('farms', JSON.stringify(farms));
+                } catch (e) {
+                    console.error("Error saving farms to localStorage:", e);
+                }
+                console.clear();
+                console.log("New Farm Added:");
+                console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = Not set, Soil = Not set`);
+                console.log("All Farms:");
+                farms.forEach(f => {
+                    console.log(`Farm ${f.id}: Area = ${f.area.toFixed(2)} km², Crop = ${f.cropType || 'Not set'}, Soil = ${f.soilType || 'Not set'}`);
+                });
+                showFarmPopup(farm.id, layer);
+                setTimeout(() => map.invalidateSize(), 0);
+            });
+
+            map.on('draw:deleted', function (e) {
+                console.log("Draw:deleted event triggered");
+                const deletedFarmIds = [];
+                e.layers.eachLayer(layer => {
+                    const farmId = layer.options.farmId;
+                    if (farmId !== undefined && farmId !== null) {
+                        deletedFarmIds.push(farmId);
+                        console.log(`Detected deletion of farm ${farmId}`);
+                    }
+                });
+                if (deletedFarmIds.length > 0) {
+                    const initialFarmCount = farms.length;
+                    farms = farms.filter(farm => !deletedFarmIds.includes(farm.id));
+                    if (farms.length < initialFarmCount) {
+                        try {
+                            localStorage.setItem('farms', JSON.stringify(farms));
+                            console.log("localStorage updated after deletion");
+                        } catch (e) {
+                            console.error("Error saving farms to localStorage:", e);
+                        }
+                        console.clear();
+                        console.log("Farm(s) Deleted:", deletedFarmIds);
+                        console.log("Remaining Farms:", farms.length);
+                        farms.forEach(farm => {
+                            console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType || 'Not set'}, Soil = ${f.soilType || 'Not set'}`);
+                        });
+                    }
+                }
+            });
+
+            function showFarmPopup(farmId, layer) {
+                const farm = farms.find(f => f.id === farmId);
+                if (!farm) {
+                    console.error(`Farm ${farmId} not found`);
+                    return;
+                }
+                const popup = document.getElementById('farmPopup');
+                const rect = layer.getBounds().getCenter();
+                const point = map.latLngToContainerPoint(rect);
+                popup.style.left = `${point.x + 10}px`;
+                popup.style.top = `${point.y + 10}px`;
+                popup.style.display = 'block';
+
+                const saveBtn = document.getElementById('farmSaveBtn');
+                const cancelBtn = document.getElementById('farmCancelBtn');
+                const newSaveBtn = saveBtn.cloneNode(true);
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+                document.getElementById('cropType').value = farm.cropType || 'wheat';
+                document.getElementById('soilType').value = farm.soilType || 'clay';
+
+                newSaveBtn.addEventListener('click', () => {
+                    const cropType = document.getElementById('cropType').value;
+                    const soilType = document.getElementById('soilType').value;
+                    if (!cropType || !soilType) {
+                        alert("Please select a crop type and soil type.");
+                        return;
+                    }
+                    farm.cropType = cropType;
+                    farm.soilType = soilType;
+                    try {
+                        localStorage.setItem('farms', JSON.stringify(farms));
+                        console.log(`Farm ${farm.id} saved to localStorage`);
+                    } catch (e) {
+                        console.error("Error saving farms to localStorage:", e);
+                    }
+                    console.clear();
+                    console.log("Farm Updated:");
+                    console.log(`Farm ${farm.id}: Area = ${farm.area.toFixed(2)} km², Crop = ${farm.cropType}, Soil = ${farm.soilType}`);
+                    console.log("All Farms:");
+                    farms.forEach(f => {
+                        console.log(`Farm ${f.id}: Area = ${f.area.toFixed(2)} km², Crop = ${f.cropType || 'Not set'}, Soil = ${f.soilType || 'Not set'}`);
+                    });
+                    popup.style.display = 'none';
+                });
+
+                newCancelBtn.addEventListener('click', () => {
+                    popup.style.display = 'none';
+                });
+            }
+
+            function calculateArea(latlngs) {
+                try {
+                    var coordinates = latlngs.map(p => [p.lng, p.lat]);
+                    coordinates.push(coordinates[0]);
+                    var polygon = turf.polygon([coordinates]);
+                    return turf.area(polygon);
+                } catch (e) {
+                    console.error("Error calculating area:", e);
+                    return 0;
+                }
+            }
+
+        });
+    </script>
+</body>
+
+</html>
